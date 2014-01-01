@@ -1,0 +1,20 @@
+<html>
+<head>
+	<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+	<script type="text/javascript">
+		// Using the image URLs from backend, render an animation of 5 frames per second.
+		var images = <%-JSON.stringify(images)%>;
+		$(document).ready(function() {
+			var i = 0;
+			window.setInterval(function() {
+				if (i >= images.length) { i = 0; }
+				$("#sprite img").attr("src", images[i]);
+				i++;
+			}, 200); // 200 ms interval = 5 frames per second
+		});
+	</script>
+</head>
+<body>
+	<div id="sprite"><img src="" width="300" /></div>
+</body>
+</html>

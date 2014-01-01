@@ -1,0 +1,13 @@
+Client TODO
+- Event loop and error handling, as described in TODO inline 
+
+Server TODO
+- Create Express server, to be hosted on HTTPS Herokuapp. Maybe use yo generator for express?
+- Bake in some rudimentary authentication, like a client secret.
+- Two API endpoints: 'POST /users/:id/photos' and 'GET /users/:id/photos'
+   aka CREATE and READ
+- GET: Use LRANGE with Redis to get last 60.
+- POST: Use LPUSH. Format will be imgur URL + imgur delete hash, delimited by something like ||
+	If COUNT > 60, then RPOP(60+) and delete those images with IMGUR delete hash
+
+TODO later: Multi-user ability
