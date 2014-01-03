@@ -21,9 +21,14 @@ var IMGUR_CLIENT_ID = nconf.get('IMGUR_CLIENT_ID');
 console.log("imgur.com client id: " + IMGUR_CLIENT_ID);
 
 // Setup Redis
-var REDIS_URL = require('url').parse(nconf.get("REDIS_URL"));
+var REDIS_URL = require('url').parse(nconf.get("REDISCLOUD_URL") || nconf.get("REDIS_URL"));
 var redis = require("redis"),
     client = redis.createClient(REDIS_URL.port, REDIS_URL.hostname);
+if (REDIS_URL.auth) {
+	var password = REDIS_URL.auth.split(":")[1];
+	console.log("Redis password = " + password);
+	client.auth(password);
+}
 
 // Express general setup
 app.use(express.logger());
