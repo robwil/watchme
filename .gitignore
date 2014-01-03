@@ -4,7 +4,6 @@ client/tmp/
 client/config.properties
 
 # Ignore server temp and cache files
-server/node_modules
+node_modules
 server/.tmp
-server/app/bower_components
 server/config.json
