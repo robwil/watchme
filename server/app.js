@@ -1,16 +1,12 @@
 'use strict';
 
 /*
- * Express Dependencies
+ * Load Dependencies
  */
 var express = require('express');
 var app = express();
 var port = 3000;
 var superagent = require('superagent');
-var fs = require('fs'),
-	nconf = require('nconf');
-var redis = require("redis"),
-    client = redis.createClient();
 
 //
 // Setup nconf to use (in-order):
@@ -18,9 +14,16 @@ var redis = require("redis"),
 //   2. Environment variables
 //   3. A file located at 'config.json'
 //
+var fs = require('fs'),
+	nconf = require('nconf');
 nconf.argv().env().file({ file: 'config.json' });
 var IMGUR_CLIENT_ID = nconf.get('IMGUR_CLIENT_ID');
 console.log("imgur.com client id: " + IMGUR_CLIENT_ID);
+
+// Setup Redis
+var REDIS_URL = require('url').parse(nconf.get("REDIS_URL"));
+var redis = require("redis"),
+    client = redis.createClient(REDIS_URL.port, REDIS_URL.hostname);
 
 // Express general setup
 app.use(express.logger());
