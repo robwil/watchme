@@ -18,6 +18,7 @@ import java.util.Properties;
 import javax.imageio.ImageIO;
 
 import org.apache.commons.codec.binary.Base64OutputStream;
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -107,8 +108,14 @@ public class WatchMe {
 		post.setEntity(new UrlEncodedFormEntity(urlParameters));
 	 
 		HttpResponse response = client.execute(post);
+		// For debugging, print response headers
+		Header[] headers = response.getAllHeaders();
+		for (Header header : headers) {
+			System.out.println(header);
+		}
 		if (response.getStatusLine().getStatusCode() != 200) {
 			// TODO: some better error handling
+			EntityUtils.consumeQuietly(response.getEntity());
 			throw new Exception("Failed to upload to imgur: " + response.getStatusLine());
 		} else {
 			// Read response JSON stream
@@ -119,6 +126,7 @@ public class WatchMe {
 				responseString.append(line);
 			}
 			// Parse response JSON
+			
 			JSONObject responseObj = (JSONObject)(JSONValue.parse(responseString.toString()));
 			JSONObject imgurDataObj = (JSONObject)(responseObj.get("data"));
 			return new Photo((String)(imgurDataObj.get("link")), (String)(imgurDataObj.get("deletehash")));
@@ -158,7 +166,7 @@ public class WatchMe {
 		HttpClient client = new DefaultHttpClient();
 		
 		// Main "event" loop
-		// Take screenshot once per minute, resize it, 
+		// Take screenshot once every two minutes, resize it, 
 		// and then upload to imgur & watchme server.
 		while(true) {
 			try {
@@ -166,7 +174,7 @@ public class WatchMe {
 				BufferedImage resizedScreenshot = resizeScreenshot(screenshot);
 				Photo photo = uploadToImgur(client, resizedScreenshot);
 				uploadToWatchMeServer(client, photo);
-				Thread.sleep(60 * 1000); // sleep one minute
+				Thread.sleep(2 * 60 * 1000); // sleep two minutes
 			} catch (Exception ex) {
 				System.err.println("Encountered exception at " + new Date());
 				ex.printStackTrace();
