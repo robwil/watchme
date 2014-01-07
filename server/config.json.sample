@@ -1,3 +1,5 @@
 {
-	"IMGUR_CLIENT_ID": "abc123"
+	"IMGUR_CLIENT_ID": "abc123",
+	"REDIS_URL": "redis://127.0.0.1:6379",
+	"CLIENT_SECRET": "abc"
 }

@@ -5,7 +5,7 @@ module.exports = function (grunt) {
     require('time-grunt')(grunt);
     // load all grunt tasks
     require('load-grunt-tasks')(grunt);
-
+    grunt.file.setBase("server/");
     grunt.initConfig({
 
         // Watch Config
@@ -51,19 +51,6 @@ module.exports = function (grunt) {
                 }]
             },
             server: ['.tmp']
-        },
-
-        // Hint Config
-        jshint: {
-            options: {
-                jshintrc: '.jshintrc'
-            },
-            all: [
-                'Gruntfile.js',
-                'assets/scripts/**/*.js',
-                '!assets/scripts/vendor/*',
-                'test/spec/**/*.js'
-            ]
         },
 
         // Express Config
@@ -218,7 +205,6 @@ module.exports = function (grunt) {
     // Register Tasks
     // Workon
     grunt.registerTask('workon', 'Start working on this project.', [
-        'jshint',
         'express:dev',
         'watch'
     ]);
