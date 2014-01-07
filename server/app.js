@@ -80,7 +80,7 @@ app.post('/photos', function(request, response) {
 				var deleteHash = reply.split("||")[1];
 				var agent = superagent.agent();
 				agent.del("https://api.imgur.com/3/image/" + deleteHash).set("Authorization", "Client-ID " + IMGUR_CLIENT_ID).end(function(imgurResponse) {
-					console.log("IMGUR response = " + imgurResponse);
+					console.log("IMGUR response = " + JSON.stringify(imgurResponse));
 					response.statusCode = (imgurResponse.body.success ? 200 : 500);
 					response.end();
 				});
