@@ -1,7 +1,7 @@
 # Ignore client temp and cache and config files
 client/bin/
 client/tmp/
-client/config.properties
+client/config/config.properties
 
 # Ignore server temp and cache files
 node_modules
