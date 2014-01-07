@@ -18,7 +18,9 @@ var fs = require('fs'),
 	nconf = require('nconf');
 nconf.argv().env().file({ file: 'config.json' });
 var IMGUR_CLIENT_ID = nconf.get('IMGUR_CLIENT_ID');
+var CLIENT_SECRET = nconf.get('CLIENT_SECRET');
 console.log("imgur.com client id: " + IMGUR_CLIENT_ID);
+console.log("client secret: " + CLIENT_SECRET);
 
 // Setup Redis
 var REDIS_URL = require('url').parse(nconf.get("REDISCLOUD_URL") || nconf.get("REDIS_URL"));
@@ -60,6 +62,12 @@ app.get('/photos', function(request, response) {
 	});
 });
 app.post('/photos', function(request, response) {
+	console.log("Header = " + JSON.stringify(request.headers));
+	if (request.headers["authorization"] != CLIENT_SECRET) {
+		response.statusCode = 401;
+		response.end();
+		return;
+	}
 	client.lpush("images", request.body.imgurLink + "||" + request.body.deleteHash, function(err, items) {
 		// If there are more than 60 items, delete the oldest one.
 		// (We are hoping there are only 1 extra.. SHOULD be true if nothing weird happens.)
