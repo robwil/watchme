@@ -11,6 +11,7 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
@@ -24,12 +25,15 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
+@SuppressWarnings("deprecation")
 public class WatchMe {
 	private static final int TARGET_WIDTH = 300;
 	private static String IMGUR_CLIENT_ID = "";
+	private static String CLIENT_SECRET = "";
 	static {
 		Properties prop = new Properties();
 		try {
@@ -38,7 +42,9 @@ public class WatchMe {
 			System.exit(-1);
 		}
 		IMGUR_CLIENT_ID = prop.getProperty("IMGUR_CLIENT_ID");
-		System.out.println("Imgur client id = " + IMGUR_CLIENT_ID);
+		CLIENT_SECRET = prop.getProperty("CLIENT_SECRET");
+		//System.out.println("Imgur client id = " + IMGUR_CLIENT_ID);
+		//System.out.println("Client secret = " + CLIENT_SECRET);
 	}
 	
 	/**
@@ -67,6 +73,12 @@ public class WatchMe {
 	    return resized;
 	}	
 	
+	/**
+	 * Convert image to Base64 so that it can be sent via HTTP POST parameters to Imgur.
+	 * @param image
+	 * @return
+	 * @throws Exception
+	 */
 	private static String imageToBase64(BufferedImage image) throws Exception {
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
 		OutputStream b64 = new Base64OutputStream(os);
@@ -74,7 +86,14 @@ public class WatchMe {
 		return os.toString("UTF-8");
 	}
 	
-	private static void uploadToImgur(HttpClient client, BufferedImage screenshot) throws Exception {
+	/**
+	 * Upload a screenshot image to imgur, via anonymous API.
+	 * @param client
+	 * @param screenshot
+	 * @return
+	 * @throws Exception
+	 */
+	private static Photo uploadToImgur(HttpClient client, BufferedImage screenshot) throws Exception {
 		String url = "https://api.imgur.com/3/upload.json";
 		HttpPost post = new HttpPost(url);
 	 
@@ -88,7 +107,7 @@ public class WatchMe {
 		HttpResponse response = client.execute(post);
 		if (response.getStatusLine().getStatusCode() != 200) {
 			// TODO: some better error handling
-			throw new Exception();
+			throw new Exception("Failed to upload to imgur: " + response.getStatusLine());
 		} else {
 			// Read response JSON stream
 			BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
@@ -100,8 +119,35 @@ public class WatchMe {
 			// Parse response JSON
 			JSONObject responseObj = (JSONObject)(JSONValue.parse(responseString.toString()));
 			JSONObject imgurDataObj = (JSONObject)(responseObj.get("data"));
-			System.out.println("Uploaded to: " + imgurDataObj.get("link"));
-			System.out.println("Delete hash: " + imgurDataObj.get("deletehash"));
+			return new Photo((String)(imgurDataObj.get("link")), (String)(imgurDataObj.get("deletehash")));
+		}
+	}
+	
+	/**
+	 * Upload photo metadata to w4tchme server, so it can display and delete it at will.
+	 * @param client
+	 * @param photo
+	 * @throws Exception
+	 */
+	private static void uploadToWatchMeServer(HttpClient client, Photo photo) throws Exception {
+		String url = "https://w4tchme.herokuapp.com/photos";
+		HttpPost post = new HttpPost(url);
+	 
+		// add auth header for WatchMe
+		post.setHeader("Authorization", CLIENT_SECRET);
+	 
+		List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
+		urlParameters.add(new BasicNameValuePair("imgurLink", photo.getImgurLink()));
+		urlParameters.add(new BasicNameValuePair("deleteHash", photo.getDeleteHash()));
+		post.setEntity(new UrlEncodedFormEntity(urlParameters));
+	 
+		HttpResponse response = client.execute(post);
+		EntityUtils.consumeQuietly(response.getEntity());
+		if (response.getStatusLine().getStatusCode() != 200) {
+			// TODO: some better error handling
+			throw new Exception("Failed to send to w4tchme server: " + response.getStatusLine());
+		} else {
+			System.out.println("Successfully uploaded photo at " + new Date());
 		}
 	}
 	
@@ -109,13 +155,21 @@ public class WatchMe {
 		// create client to use for entire app life
 		HttpClient client = new DefaultHttpClient();
 		
-		// TODO: wrap this whole thing in a loop that executes once every 1 minute
-		// TODO: error handling in main loop, for now we can just show message box with error
-		BufferedImage screenshot = takeScreenshot();
-		BufferedImage resizedScreenshot = resizeScreenshot(screenshot);
-		uploadToImgur(client, resizedScreenshot);
-		
+		// Main "event" loop
+		// Take screenshot once per minute, resize it, 
+		// and then upload to imgur & watchme server.
+		while(true) {
+			try {
+				BufferedImage screenshot = takeScreenshot();
+				BufferedImage resizedScreenshot = resizeScreenshot(screenshot);
+				Photo photo = uploadToImgur(client, resizedScreenshot);
+				uploadToWatchMeServer(client, photo);
+				Thread.sleep(60 * 1000); // sleep one minute
+			} catch (Exception ex) {
+				System.err.println("Encountered exception at " + new Date());
+				ex.printStackTrace();
+			}
+		}
 	}
-
 	
 }
