@@ -178,6 +178,7 @@ public class WatchMe {
 			} catch (Exception ex) {
 				System.err.println("Encountered exception at " + new Date());
 				ex.printStackTrace();
+				Thread.sleep(2 * 60 * 1000); // sleep two minutes
 			}
 		}
 	}
