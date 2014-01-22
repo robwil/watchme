@@ -23,22 +23,37 @@
 			return date.join("/") + " " + time.join(":") + " " + suffix;
 		}
 
-		// Using the image URLs from backend, render an animation of 5 frames per second.
+		// The images from the backend, inserted via Node templating.
 		var images = <%-JSON.stringify(images)%>;
-		// Want to do initial parse of images array, to format timestamps once (rather than every time we show them)
+
+		// Initial parse of images array, to format timestamps once (rather than every time we show them)
 		for (var i = 0; i < images.length; i++) {
 			var timestamp = images[i].timestamp;
 			images[i].formattedTime = formatTime(parseInt(timestamp));
 		}
+
 		$(document).ready(function() {
+			// Setup framerate slider and map to var 'framerate'
+			var framerate = $("#framerate").val();
+			$("#framerate_display").val(framerate);
+			$("#framerate").change(function() {
+				framerate = $("#framerate").val();
+				$("#framerate_display").val(framerate);
+			})
 			var i = 0;
+
+			// Using the image URLs from backend, render an animation of the images, using variable framerate from user.
 			if (images.length > 0) { // no sense in doing anything if we have no images
-				window.setInterval(function() {
+				var nextFrame = function() {
 					if (i >= images.length) { i = 0; }
 					$("#sprite img").attr("src", images[i].imgurLink);
 					$("#timestamp").html(images[i].formattedTime);
 					i++;
-				}, 200); // 200 ms interval = 5 frames per second
+					window.setTimeout(nextFrame, Math.floor(1000 / framerate));
+				};
+				// Get the animation going.
+				// default = 5 frames per second = 200 ms interval
+				window.setTimeout(nextFrame, Math.floor(1000 / framerate)); 
 			}
 		});
 	</script>
@@ -46,5 +61,10 @@
 <body>
 	<div id="sprite"><img src="" width="300" /></div>
 	<div id="timestamp"></div>
+	<div id="controls">
+		<label for="slider">Framerate:</label>
+		<input id="framerate" type="range" min="1" max="10" value="5" />
+		<input id="framerate_display" disabled="disabled" type="text" size="2" style="text-align: center;" />
+	</div>
 </body>
 </html>
