@@ -48,10 +48,15 @@ app.get('/photos', function(request, response) {
 	// Fetch the last 60 images from Redis store
 	client.lrange("images", 0, 59, function(err, replies) {
 		var images = [];
-		// Extract imgur links from DB format ('imgurLink||deleteHash')
+		// Extract imgur links from DB format ('imgurLink||deleteHash||timestamp')
 		// While reversing (to put in chronological order instead of reverse chron.)
 		for (var i = replies.length - 1; i >= 0; i--) {
-			images.push(replies[i].split("||")[0]);
+			var pieces = replies[i].split("||");
+			images.push({
+				imgurLink: pieces[0],
+				// we ignore the deleteHash at [1] because it is only used by backend
+				timestamp: pieces[2]
+			});
 		}
 		// Render the photos with a JS animation
 		response.render("photos.html", {
@@ -68,7 +73,8 @@ app.post('/photos', function(request, response) {
 		response.end();
 		return;
 	}
-	client.lpush("images", request.body.imgurLink + "||" + request.body.deleteHash, function(err, items) {
+	// NOTE: This push is basically where we define our "schema", which must match the parsing of it above in GET /photos
+	client.lpush("images", request.body.imgurLink + "||" + request.body.deleteHash + "||" + new Date().getTime(), function(err, items) {
 		// If there are more than 60 items, delete the oldest one.
 		// (We are hoping there are only 1 extra.. SHOULD be true if nothing weird happens.)
 		console.log("Items = " + items);
